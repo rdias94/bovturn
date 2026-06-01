@@ -9,6 +9,7 @@ import ClientesView from "./ClientesView";
 import ConfinamentoView from "./ConfinamentoView";
 import AnaliseView from "./AnaliseView";
 import CriaView from "./CriaView";
+import EngordaView from "./EngordaView";
 
 interface Msg {
   autor: "voce" | "agente";
@@ -41,7 +42,7 @@ export default function App() {
   const [erro, setErro] = useState<string | null>(null);
   const [banco, setBanco] = useState<string>("");
   const [aba, setAba] = useState<
-    "agente" | "cria" | "clientes" | "confinamento" | "analise"
+    "agente" | "cria" | "engorda" | "clientes" | "confinamento" | "analise"
   >("agente");
   const fimRef = useRef<HTMLDivElement>(null);
 
@@ -117,7 +118,14 @@ export default function App() {
         </div>
         <nav className="mx-auto flex max-w-5xl gap-1 px-4">
           {(
-            ["agente", "cria", "confinamento", "analise", "clientes"] as const
+            [
+              "agente",
+              "cria",
+              "engorda",
+              "confinamento",
+              "analise",
+              "clientes",
+            ] as const
           ).map((t) => (
             <button
               key={t}
@@ -132,11 +140,13 @@ export default function App() {
                 ? "Agente"
                 : t === "cria"
                   ? "Cria"
-                  : t === "confinamento"
-                    ? "Confinamento"
-                    : t === "analise"
-                      ? "Análise"
-                      : "Clientes"}
+                  : t === "engorda"
+                    ? "Engorda"
+                    : t === "confinamento"
+                      ? "Confinamento"
+                      : t === "analise"
+                        ? "Análise"
+                        : "Clientes"}
             </button>
           ))}
         </nav>
@@ -146,6 +156,7 @@ export default function App() {
       {aba === "confinamento" && <ConfinamentoView />}
       {aba === "analise" && <AnaliseView />}
       {aba === "cria" && <CriaView />}
+      {aba === "engorda" && <EngordaView />}
 
       {aba === "agente" && (
       <main className="mx-auto grid max-w-5xl gap-4 px-4 py-4 lg:grid-cols-[1fr_minmax(0,420px)]">

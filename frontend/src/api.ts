@@ -123,7 +123,9 @@ export interface EntradaConfinamento {
   rendimento_ganho: number;
   preco_compra_arroba: number;
   preco_venda_arroba: number;
-  custo_kg_ms: number;
+  preco_saca_milho: number;
+  pct_milho_dieta: number;
+  custo_ms_outros: number;
   consumo_pct_pv: number;
   diaria_operacional: number;
   dias_max: number;
@@ -325,6 +327,51 @@ export interface CriaResultado {
 
 export async function projetarCria(e: Partial<CriaEntrada>): Promise<CriaResultado> {
   const r = await fetch(`${API_URL}/api/cria/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(e),
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.detail || `Erro ${r.status}`);
+  return data;
+}
+
+export interface EngordaEntrada {
+  peso_entrada_kg: number;
+  frame_score: number;
+  sexo: string;
+  rendimento_carcaca: number;
+  gmd_esperado: number;
+  preco_compra_arroba: number;
+  preco_venda_arroba: number;
+  diaria_total: number;
+}
+
+export interface EngordaResultado {
+  resultado: {
+    frame_score: number;
+    sexo: string;
+    arroba_abate: number;
+    peso_abate_kg: number;
+    arroba_entrada: number;
+    arrobas_produzidas: number;
+    dias: number;
+    custo_animal: number;
+    custo_operacional: number;
+    custo_total: number;
+    receita: number;
+    margem_cab: number;
+    custo_arroba_produzida: number;
+    agio_cab: number;
+    tir_am_pct: number;
+    viavel: boolean;
+    semaforo: string;
+  };
+  tabela_frame: { frame: number; arroba_abate: number; peso_abate_kg: number }[];
+}
+
+export async function calcularEngorda(e: Partial<EngordaEntrada>): Promise<EngordaResultado> {
+  const r = await fetch(`${API_URL}/api/engorda/calcular`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(e),

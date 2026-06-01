@@ -30,16 +30,27 @@ class EntradaConfinamento(BaseModel):
     rendimento_carcaca: float = Field(50.0, gt=0, description="Rendimento de carcaça de entrada (%)")
     rendimento_ganho: float = Field(60.0, gt=0, description="Rendimento de carcaça do GANHO (%) — a engorda rende mais")
     preco_compra_arroba: float = Field(300, gt=0, description="R$/@ carcaça paga na reposição")
-    preco_venda_arroba: float = Field(310, gt=0, description="R$/@ carcaça na venda")
-    custo_kg_ms: float = Field(1.40, gt=0, description="Custo do kg de matéria seca")
+    preco_venda_arroba: float = Field(349.7, gt=0, description="R$/@ carcaça na venda (CEPEA boi gordo)")
+    # Custo da dieta derivado do MILHO (dieta real ~50% milho na MS)
+    preco_saca_milho: float = Field(65.0, gt=0, description="Preço da saca de milho (60 kg)")
+    pct_milho_dieta: float = Field(0.50, ge=0, le=1, description="Fração da MS da dieta que é milho")
+    custo_ms_outros: float = Field(0.95, ge=0, description="Custo R$/kg MS dos demais ingredientes")
     consumo_pct_pv: float = Field(2.2, gt=0, description="Consumo de MS (% do peso vivo)")
     diaria_operacional: float = Field(1.60, ge=0, description="Diária operacional (R$/cab/dia)")
     dias_max: int = Field(180, gt=0, le=400, description="Horizonte de simulação (dias)")
 
 
+def _custo_kg_ms(e: "EntradaConfinamento") -> float:
+    """Custo do kg de MS da dieta, derivado do preço do milho.
+    Milho moído ~87% MS, saca de 60 kg → R$/kg MS = preço_saca / 60 / 0,87."""
+    milho_kg_ms = e.preco_saca_milho / 60.0 / 0.87
+    return e.pct_milho_dieta * milho_kg_ms + (1 - e.pct_milho_dieta) * e.custo_ms_outros
+
+
 def _simular(e: EntradaConfinamento) -> dict:
     rc_base = e.rendimento_carcaca / 100.0
     rg = e.rendimento_ganho / 100.0
+    custo_kg_ms = _custo_kg_ms(e)
     carcaca_entrada = e.peso_entrada_kg * rc_base
     arroba_entrada = carcaca_entrada / ARROBA_CARCACA_KG
     custo_animal = arroba_entrada * e.preco_compra_arroba
@@ -55,7 +66,7 @@ def _simular(e: EntradaConfinamento) -> dict:
         gmd = max(e.gmd_inicial - e.decaimento_gmd * dia, 0.0)
         peso_vivo += gmd
         cms_kg = peso_vivo * (e.consumo_pct_pv / 100.0)
-        diaria = cms_kg * e.custo_kg_ms + e.diaria_operacional
+        diaria = cms_kg * custo_kg_ms + e.diaria_operacional
         custo_acum += diaria
 
         # carcaça = carcaça de entrada + ganho de peso × rendimento do ganho
