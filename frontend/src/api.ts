@@ -339,6 +339,7 @@ export async function projetarCria(e: Partial<CriaEntrada>): Promise<CriaResulta
 export interface EngordaEntrada {
   peso_entrada_kg: number;
   frame_score: number;
+  peso_vaca_adulta: number;
   sexo: string;
   rendimento_carcaca: number;
   gmd_esperado: number;
@@ -350,6 +351,7 @@ export interface EngordaEntrada {
 export interface EngordaResultado {
   resultado: {
     frame_score: number;
+    frame_origem: string;
     sexo: string;
     arroba_abate: number;
     peso_abate_kg: number;

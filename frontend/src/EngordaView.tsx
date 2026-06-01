@@ -3,7 +3,8 @@ import { calcularEngorda, type EngordaEntrada, type EngordaResultado } from "./a
 
 const PADRAO: Partial<EngordaEntrada> = {
   peso_entrada_kg: 360,
-  frame_score: 7,
+  frame_score: 6,
+  peso_vaca_adulta: 475,
   sexo: "macho",
   rendimento_carcaca: 54,
   gmd_esperado: 1.1,
@@ -45,7 +46,7 @@ export default function EngordaView() {
       <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
         <h2 className="mb-1 text-sm font-semibold text-neutral-900">Engorda — peso de abate por frame score</h2>
         <p className="mb-3 text-xs text-neutral-500">
-          O peso final sai do <b>frame score</b> (Nelore: macho @abate = 11 + frame; fêmea = 8 + frame). Fonte: frame score Nelore (SciELO).
+          O peso final sai do <b>frame</b>. Defina pelo <b>peso da vaca adulta</b> (jeito prático) — deixe 0 para usar o frame manual. Fonte: frame score Nelore (SciELO).
         </p>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           <label className="block">
@@ -56,9 +57,14 @@ export default function EngordaView() {
             </select>
           </label>
           <label className="block">
-            <span className="text-[11px] text-neutral-500">Frame score (1–11): <b>{form.frame_score}</b></span>
+            <span className="text-[11px] font-medium text-emerald-700">Peso da vaca adulta (kg)</span>
+            <input type="number" step="5" className={inp} value={form.peso_vaca_adulta}
+              onChange={(e) => set("peso_vaca_adulta", e.target.value)} />
+          </label>
+          <label className="block">
+            <span className="text-[11px] text-neutral-500">…ou frame direto (1–11): <b>{form.frame_score}</b></span>
             <input type="range" min={1} max={11} step={1} className="w-full" value={form.frame_score}
-              onChange={(e) => set("frame_score", parseFloat(e.target.value))} />
+              onChange={(e) => { setForm({ ...form, frame_score: parseFloat(e.target.value), peso_vaca_adulta: 0 }); }} />
           </label>
           {([
             ["peso_entrada_kg", "Peso entrada (kg)", "1"],
@@ -84,7 +90,7 @@ export default function EngordaView() {
       {r && res && (
         <>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Kpi t="Peso de abate" v={`${r.peso_abate_kg} kg`} s={`${r.arroba_abate}@ carcaça (frame ${r.frame_score})`} cor="#1f4e5f" />
+            <Kpi t="Peso de abate" v={`${r.peso_abate_kg} kg`} s={`${r.arroba_abate}@ · frame ${r.frame_score} (${r.frame_origem})`} cor="#1f4e5f" />
             <Kpi t="Dias de engorda" v={`${r.dias}`} s={`${r.arrobas_produzidas}@ a produzir`} cor="#1f4e5f" />
             <Kpi t="Margem/cab" v={brl(r.margem_cab)} s={`TIR ${r.tir_am_pct}% a.m.`} cor={r.viavel ? "#059669" : "#dc2626"} />
             <Kpi t="Custo @ produzida" v={brl(r.custo_arroba_produzida)} s={`ágio ${brl(r.agio_cab)}/cab`} cor="#1f4e5f" />

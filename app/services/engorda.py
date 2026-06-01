@@ -25,6 +25,14 @@ def arroba_abate_por_frame(frame: float, sexo: str) -> float:
     return base + frame
 
 
+def frame_por_peso_matriz(peso_vaca_adulta: float) -> float:
+    """Estima o frame score a partir do peso adulto da matriz (proxy prático).
+    Calibrado: vaca ~450kg→frame 4 (precoce), ~510→6 (médio), ~580→8 (grande).
+    Frame ↔ peso maduro (correlação genética alta). Clampado em 1–11."""
+    frame = 4.0 + (peso_vaca_adulta - 450.0) * 0.031
+    return max(1.0, min(frame, 11.0))
+
+
 @dataclass
 class EngordaEntrada:
     peso_entrada_kg: float = 360.0
@@ -36,11 +44,15 @@ class EngordaEntrada:
     preco_venda_arroba: float = 349.7      # R$/@ carcaça (CEPEA boi gordo)
     diaria_total: float = 6.0              # R$/cab/dia (alimentar + operacional)
     arroba_abate_alvo: Optional[float] = None  # se informado, ignora o frame
+    peso_vaca_adulta: Optional[float] = None   # se informado, define o frame (proxy)
 
 
 def calcular(e: EngordaEntrada) -> dict:
     rc = e.rendimento_carcaca / 100.0
-    arroba_abate = e.arroba_abate_alvo or arroba_abate_por_frame(e.frame_score, e.sexo)
+    # Frame vem do peso da matriz (se informado) > frame_score informado
+    frame = (frame_por_peso_matriz(e.peso_vaca_adulta)
+             if e.peso_vaca_adulta else e.frame_score)
+    arroba_abate = e.arroba_abate_alvo or arroba_abate_por_frame(frame, e.sexo)
     peso_abate = arroba_abate * ARROBA_CARCACA_KG / rc
 
     arroba_entrada = e.peso_entrada_kg * rc / ARROBA_CARCACA_KG
@@ -59,7 +71,8 @@ def calcular(e: EngordaEntrada) -> dict:
     tir_am = ((receita / custo_total) ** (30.0 / dias) - 1) if dias > 0 and custo_total > 0 else 0
 
     return {
-        "frame_score": e.frame_score,
+        "frame_score": round(frame, 1),
+        "frame_origem": "peso da matriz" if e.peso_vaca_adulta else "frame informado",
         "sexo": e.sexo,
         "arroba_abate": round(arroba_abate, 1),
         "peso_abate_kg": round(peso_abate, 1),
