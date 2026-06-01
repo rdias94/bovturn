@@ -14,6 +14,7 @@ from app.routes import confinamento
 from app.routes import analise
 from app.routes import cria
 from app.routes import engorda
+from app.routes import recria
 
 
 @asynccontextmanager
@@ -35,6 +36,7 @@ app.include_router(confinamento.router, prefix="/api/confinamento", tags=["Confi
 app.include_router(analise.router, prefix="/api/analise", tags=["Análise"])
 app.include_router(cria.router, prefix="/api/cria", tags=["Cria"])
 app.include_router(engorda.router, prefix="/api/engorda", tags=["Engorda"])
+app.include_router(recria.router, prefix="/api/recria", tags=["Recria"])
 
 
 @app.get("/")

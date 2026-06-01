@@ -10,6 +10,7 @@ import ConfinamentoView from "./ConfinamentoView";
 import AnaliseView from "./AnaliseView";
 import CriaView from "./CriaView";
 import EngordaView from "./EngordaView";
+import RecriaView from "./RecriaView";
 
 interface Msg {
   autor: "voce" | "agente";
@@ -42,7 +43,13 @@ export default function App() {
   const [erro, setErro] = useState<string | null>(null);
   const [banco, setBanco] = useState<string>("");
   const [aba, setAba] = useState<
-    "agente" | "cria" | "engorda" | "clientes" | "confinamento" | "analise"
+    | "agente"
+    | "cria"
+    | "recria"
+    | "engorda"
+    | "clientes"
+    | "confinamento"
+    | "analise"
   >("agente");
   const fimRef = useRef<HTMLDivElement>(null);
 
@@ -121,6 +128,7 @@ export default function App() {
             [
               "agente",
               "cria",
+              "recria",
               "engorda",
               "confinamento",
               "analise",
@@ -140,13 +148,15 @@ export default function App() {
                 ? "Agente"
                 : t === "cria"
                   ? "Cria"
-                  : t === "engorda"
-                    ? "Engorda"
-                    : t === "confinamento"
-                      ? "Confinamento"
-                      : t === "analise"
-                        ? "Análise"
-                        : "Clientes"}
+                  : t === "recria"
+                    ? "Recria"
+                    : t === "engorda"
+                      ? "Engorda"
+                      : t === "confinamento"
+                        ? "Confinamento"
+                        : t === "analise"
+                          ? "Análise"
+                          : "Clientes"}
             </button>
           ))}
         </nav>
@@ -157,6 +167,7 @@ export default function App() {
       {aba === "analise" && <AnaliseView />}
       {aba === "cria" && <CriaView />}
       {aba === "engorda" && <EngordaView />}
+      {aba === "recria" && <RecriaView />}
 
       {aba === "agente" && (
       <main className="mx-auto grid max-w-5xl gap-4 px-4 py-4 lg:grid-cols-[1fr_minmax(0,420px)]">

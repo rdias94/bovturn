@@ -380,3 +380,48 @@ export async function calcularEngorda(e: Partial<EngordaEntrada>): Promise<Engor
   if (!r.ok) throw new Error(data.detail || `Erro ${r.status}`);
   return data;
 }
+
+export interface RecriaEntrada {
+  peso_entrada_kg: number;
+  peso_saida_kg: number;
+  gmd: number;
+  preco_kg_compra: number;
+  preco_kg_venda: number;
+  custo_kg_suplemento: number;
+  custo_mdo_cab_mes: number;
+  custo_gastos_prod_cab_mes: number;
+  custo_sanidade_cab: number;
+}
+
+export interface RecriaResultado {
+  resultado: {
+    dias: number;
+    meses: number;
+    ganho_kg: number;
+    arrobas_produzidas: number;
+    arroba_entrada: number;
+    arroba_saida: number;
+    custo_animal: number;
+    custo_operacional: number;
+    custo_total: number;
+    receita: number;
+    margem_cab: number;
+    custo_arroba_produzida: number;
+    custo_kg_produzido: number;
+    relacao_compra_venda: number;
+    tir_am_pct: number;
+    viavel: boolean;
+    semaforo: string;
+  };
+}
+
+export async function calcularRecria(e: Partial<RecriaEntrada>): Promise<RecriaResultado> {
+  const r = await fetch(`${API_URL}/api/recria/calcular`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(e),
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.detail || `Erro ${r.status}`);
+  return data;
+}
