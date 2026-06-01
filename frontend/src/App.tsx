@@ -8,6 +8,7 @@ import {
 import ClientesView from "./ClientesView";
 import ConfinamentoView from "./ConfinamentoView";
 import AnaliseView from "./AnaliseView";
+import CriaView from "./CriaView";
 
 interface Msg {
   autor: "voce" | "agente";
@@ -40,7 +41,7 @@ export default function App() {
   const [erro, setErro] = useState<string | null>(null);
   const [banco, setBanco] = useState<string>("");
   const [aba, setAba] = useState<
-    "agente" | "clientes" | "confinamento" | "analise"
+    "agente" | "cria" | "clientes" | "confinamento" | "analise"
   >("agente");
   const fimRef = useRef<HTMLDivElement>(null);
 
@@ -115,33 +116,36 @@ export default function App() {
           </span>
         </div>
         <nav className="mx-auto flex max-w-5xl gap-1 px-4">
-          {(["agente", "clientes", "confinamento", "analise"] as const).map(
-            (t) => (
-              <button
-                key={t}
-                onClick={() => setAba(t)}
-                className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${
-                  aba === t
-                    ? "border-emerald-600 text-emerald-700"
-                    : "border-transparent text-neutral-500 hover:text-neutral-800"
-                }`}
-              >
-                {t === "agente"
-                  ? "Agente"
-                  : t === "clientes"
-                    ? "Clientes"
-                    : t === "confinamento"
-                      ? "Confinamento"
-                      : "Análise"}
-              </button>
-            ),
-          )}
+          {(
+            ["agente", "cria", "confinamento", "analise", "clientes"] as const
+          ).map((t) => (
+            <button
+              key={t}
+              onClick={() => setAba(t)}
+              className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${
+                aba === t
+                  ? "border-emerald-600 text-emerald-700"
+                  : "border-transparent text-neutral-500 hover:text-neutral-800"
+              }`}
+            >
+              {t === "agente"
+                ? "Agente"
+                : t === "cria"
+                  ? "Cria"
+                  : t === "confinamento"
+                    ? "Confinamento"
+                    : t === "analise"
+                      ? "Análise"
+                      : "Clientes"}
+            </button>
+          ))}
         </nav>
       </header>
 
       {aba === "clientes" && <ClientesView />}
       {aba === "confinamento" && <ConfinamentoView />}
       {aba === "analise" && <AnaliseView />}
+      {aba === "cria" && <CriaView />}
 
       {aba === "agente" && (
       <main className="mx-auto grid max-w-5xl gap-4 px-4 py-4 lg:grid-cols-[1fr_minmax(0,420px)]">

@@ -116,26 +116,59 @@ export async function cadastrarCliente(
 }
 
 export interface EntradaConfinamento {
-  diaria: number;
-  ganho_carcaca: number;
-  preco_venda: number;
-  custo_animal: number;
-  dias: number;
+  peso_entrada_kg: number;
+  gmd_inicial: number;
+  decaimento_gmd: number;
+  rendimento_carcaca: number;
+  rendimento_ganho: number;
+  preco_compra_arroba: number;
+  preco_venda_arroba: number;
+  custo_kg_ms: number;
+  consumo_pct_pv: number;
+  diaria_operacional: number;
+  dias_max: number;
+}
+
+export interface ResumoConfinamento {
+  dias_otimos: number;
+  breakeven_dias: number | null;
+  lucro_maximo: number;
+  margem_cab: number;
+  peso_saida_kg: number;
+  gmd_medio: number;
+  ganho_carcaca_medio: number;
+  rendimento_carcaca_entrada: number;
+  rendimento_carcaca_saida: number;
   arroba_entrada: number;
+  arroba_saida: number;
+  arrobas_produzidas: number;
+  custo_animal: number;
+  custo_operacional: number;
+  custo_arroba_produzida: number;
+  receita: number;
+  agio_cab: number;
+  viavel: boolean;
+  semaforo: string;
+}
+
+export interface PontoCurva {
+  dia: number;
+  gmd: number;
+  peso_vivo: number;
+  rc_atual: number;
+  arroba_carcaca: number;
+  receita: number;
+  custo_acumulado: number;
+  lucro: number;
+  diaria: number;
 }
 
 export interface ResultadoConfinamento {
-  custo_arroba_produzida: number;
-  arrobas_produzidas: number;
-  arroba_final: number;
-  custo_alimentacao: number;
-  custo_total: number;
-  receita: number;
-  margem_cab: number;
-  preco_equilibrio: number;
-  custo_animal_max_viavel: number;
-  viavel: boolean;
-  semaforo: string;
+  sucesso: boolean;
+  resumo: ResumoConfinamento | null;
+  curva: PontoCurva[];
+  dias_otimos: number;
+  breakeven_dias: number | null;
 }
 
 export async function calcularConfinamento(
@@ -148,7 +181,7 @@ export async function calcularConfinamento(
   });
   const data = await r.json();
   if (!r.ok) throw new Error(data.detail || `Erro ${r.status}`);
-  return data.resultado;
+  return data;
 }
 
 export interface MatrizConfinamento {
@@ -236,6 +269,62 @@ export async function analisarGiro(
   e: AnaliseEntrada,
 ): Promise<AnaliseResultado> {
   const r = await fetch(`${API_URL}/api/analise/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(e),
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.detail || `Erro ${r.status}`);
+  return data;
+}
+
+export interface CriaEntrada {
+  vacas: number;
+  novilhas: number;
+  taxa_desmame: number;
+  taxa_descarte_vacas: number;
+  peso_desmame_kg: number;
+  preco_kg_bezerro: number;
+  custo_pasto_arrendamento: number;
+  custo_sal_mineral: number;
+  custo_sanidade: number;
+  custo_mao_de_obra: number;
+  custo_outros: number;
+  anos: number;
+}
+
+export interface AnoCria {
+  ano: number;
+  vacas: number;
+  expostas: number;
+  bezerros_desmamados: number;
+  custo_total: number;
+  receita_total: number;
+  lucro_total: number;
+  custo_por_bezerro: number;
+  lucro_por_bezerro: number;
+  lucro_por_vaca_exposta: number;
+}
+
+export interface CriaResultado {
+  anos: AnoCria[];
+  resumo: {
+    custo_vaca_ano: number;
+    taxa_desmame: number;
+    custo_por_bezerro: number;
+    preco_venda_bezerro: number;
+    lucro_por_bezerro: number;
+    lucro_por_vaca_exposta: number;
+    viavel: boolean;
+    semaforo: string;
+    rebanho_inicial: number;
+    rebanho_final: number;
+  };
+  componentes_custo: Record<string, number>;
+}
+
+export async function projetarCria(e: Partial<CriaEntrada>): Promise<CriaResultado> {
+  const r = await fetch(`${API_URL}/api/cria/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(e),
