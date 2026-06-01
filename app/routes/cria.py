@@ -1,6 +1,6 @@
 """
-BovTurn — Endpoint de Cria (evolução de rebanho)
-POST /api/cria → projeção ano a ano + custo do bezerro + lucro/cabeça.
+BovTurn — Endpoint de Cria (rebanho + reprodutivo)
+POST /api/cria → índices reprodutivos + projeção ano a ano + custo/lucro do bezerro.
 """
 
 from fastapi import APIRouter
@@ -12,23 +12,23 @@ router = APIRouter()
 
 
 class CriaRequest(BaseModel):
-    vacas: int = Field(1000, ge=0)
-    novilhas: int = Field(250, ge=0)
-    bezerras_retidas: int = Field(0, ge=0)
+    matrizes: int = Field(1000, ge=0)
     touros: int = Field(40, ge=0)
 
-    taxa_desmame: float = 0.80
-    mortalidade_bezerro: float = 0.03
+    taxa_prenhez: float = 0.85
+    perda_gestacional: float = 0.03
+    mortalidade_bezerro: float = 0.04
+    idade_primeiro_parto_meses: int = 36
     taxa_descarte_vacas: float = 0.16
+    taxa_crescimento_rebanho: float = 0.0
 
-    peso_desmame_kg: float = 200.0
-    preco_kg_bezerro: float = 13.0
-    preco_kg_bezerra: float = 11.0
+    peso_desmame_kg: float = 210.0
+    preco_kg_bezerro: float = 13.5
+    preco_kg_bezerra: float = 11.5
     peso_vaca_descarte_kg: float = 450.0
     rendimento_vaca: float = 0.50
     preco_arroba_vaca: float = 280.0
 
-    # Custo da vaca/ano por componentes (R$/vaca/ano)
     custo_pasto_arrendamento: float = 0.0
     custo_sal_mineral: float = 0.0
     custo_sanidade: float = 0.0
@@ -41,10 +41,12 @@ class CriaRequest(BaseModel):
 @router.post("/")
 def cria(req: CriaRequest):
     entrada = CriaEntrada(
-        vacas=req.vacas, novilhas=req.novilhas, bezerras_retidas=req.bezerras_retidas,
-        touros=req.touros,
-        taxa_desmame=req.taxa_desmame, mortalidade_bezerro=req.mortalidade_bezerro,
+        matrizes=req.matrizes, touros=req.touros,
+        taxa_prenhez=req.taxa_prenhez, perda_gestacional=req.perda_gestacional,
+        mortalidade_bezerro=req.mortalidade_bezerro,
+        idade_primeiro_parto_meses=req.idade_primeiro_parto_meses,
         taxa_descarte_vacas=req.taxa_descarte_vacas,
+        taxa_crescimento_rebanho=req.taxa_crescimento_rebanho,
         peso_desmame_kg=req.peso_desmame_kg, preco_kg_bezerro=req.preco_kg_bezerro,
         preco_kg_bezerra=req.preco_kg_bezerra,
         peso_vaca_descarte_kg=req.peso_vaca_descarte_kg, rendimento_vaca=req.rendimento_vaca,

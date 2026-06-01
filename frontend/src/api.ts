@@ -281,10 +281,12 @@ export async function analisarGiro(
 }
 
 export interface CriaEntrada {
-  vacas: number;
-  novilhas: number;
-  taxa_desmame: number;
+  matrizes: number;
+  taxa_prenhez: number;
+  mortalidade_bezerro: number;
+  idade_primeiro_parto_meses: number;
   taxa_descarte_vacas: number;
+  taxa_crescimento_rebanho: number;
   peso_desmame_kg: number;
   preco_kg_bezerro: number;
   custo_pasto_arrendamento: number;
@@ -297,7 +299,7 @@ export interface CriaEntrada {
 
 export interface AnoCria {
   ano: number;
-  vacas: number;
+  matrizes: number;
   expostas: number;
   bezerros_desmamados: number;
   custo_total: number;
@@ -306,17 +308,33 @@ export interface AnoCria {
   custo_por_bezerro: number;
   lucro_por_bezerro: number;
   lucro_por_vaca_exposta: number;
+  kg_desmamado_por_vaca: number;
+  desfrute_pct: number;
 }
 
 export interface CriaResultado {
   anos: AnoCria[];
+  reprodutivo: {
+    taxa_prenhez_pct: number;
+    taxa_prenhez_verdito: string;
+    taxa_natalidade_pct: number;
+    taxa_desmame_pct: number;
+    taxa_desmame_verdito: string;
+    mortalidade_bezerro_pct: number;
+    mortalidade_verdito: string;
+    iep_meses: number;
+    iep_verdito: string;
+    idade_primeiro_parto_meses: number;
+    ipp_verdito: string;
+  };
   resumo: {
     custo_vaca_ano: number;
-    taxa_desmame: number;
     custo_por_bezerro: number;
     preco_venda_bezerro: number;
     lucro_por_bezerro: number;
     lucro_por_vaca_exposta: number;
+    kg_desmamado_por_vaca: number;
+    desfrute_pct: number;
     viavel: boolean;
     semaforo: string;
     rebanho_inicial: number;
