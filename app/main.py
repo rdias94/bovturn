@@ -9,6 +9,9 @@ from app import db
 from app.routes import giros
 from app.routes import agente_whatsapp
 from app.routes import curadoria
+from app.routes import clientes
+from app.routes import confinamento
+from app.routes import analise
 
 
 @asynccontextmanager
@@ -25,6 +28,9 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 app.include_router(giros.router, prefix="/api/giros", tags=["Giros"])
 app.include_router(agente_whatsapp.router, prefix="/api/agente", tags=["Agente"])
 app.include_router(curadoria.router, prefix="/api/curadoria", tags=["Curadoria"])
+app.include_router(clientes.router, prefix="/api/clientes", tags=["Clientes"])
+app.include_router(confinamento.router, prefix="/api/confinamento", tags=["Confinamento"])
+app.include_router(analise.router, prefix="/api/analise", tags=["Análise"])
 
 
 @app.get("/")

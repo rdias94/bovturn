@@ -3,3 +3,7 @@ venv/
 __pycache__/
 *.pyc
 .Python
+data/planilha_v15_bzbm/*.csv
+data/planilha_v15_bzbm/manifest.json
+data/source/*.xlsm
+data/source/*.xlsx
