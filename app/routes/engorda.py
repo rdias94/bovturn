@@ -24,6 +24,7 @@ class EngordaRequest(BaseModel):
     diaria_total: float = 6.0
     arroba_abate_alvo: Optional[float] = None
     peso_vaca_adulta: Optional[float] = None
+    fator_abate_matriz: Optional[float] = None
 
 
 @router.post("/calcular")

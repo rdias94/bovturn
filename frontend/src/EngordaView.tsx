@@ -6,7 +6,7 @@ const PADRAO: Partial<EngordaEntrada> = {
   frame_score: 6,
   peso_vaca_adulta: 475,
   sexo: "macho",
-  rendimento_carcaca: 54,
+  rendimento_carcaca: 53,
   gmd_esperado: 1.1,
   preco_compra_arroba: 330,
   preco_venda_arroba: 349.7,
