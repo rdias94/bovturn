@@ -1,18 +1,25 @@
 """
-BovTurn — Módulo de Confinamento (curva de ganho)
-=================================================
+BovTurn — Módulo de Confinamento (curva de ganho + consumo por fase)
+====================================================================
 Motor com CURVA DE GANHO real: o GMD CAI ao longo dos dias de cocho
-(curva de Domingues, 2018 → GMD médio ≈ a − b·dias). Por isso o lucro
-NÃO cresce indefinidamente — existe um ponto de Lucro Máximo (dias ótimos).
+(curva de Domingues, 2018 → GMD ≈ gmd_inicial − decaimento·dia). Por isso
+o lucro NÃO cresce indefinidamente — existe um Lucro Máximo (dias ótimos).
+
+CONSUMO POR FASE (calibrado em dados reais de operação — planilha
+"Planejamento Dieta / Ajuste MS" do Riésley):
+    Adaptação   ~2,0% PV   (step-up restrito, evita acidose)
+    Crescimento ~2,5% PV   (pico de ingestão, animal em ganho rápido)
+    Terminação  ~2,2% PV   (cai com deposição de gordura + PV alto)
+O consumo em kg/dia ainda sobe porque o animal fica mais pesado, mas o
+%PV segue a curva fisiológica real, não um valor fixo.
+
+CUSTO DA DIETA derivado do MILHO (terminação real ~56% milho na MS →
+R$1,08/kg MS, batendo com o custo real R$1,076/kgMS).
 
 Receita diária = ganho de carcaça do dia × valor da @.
 Despesa diária = consumo de MS (kg) × custo do kg de MS + diária operacional.
-O consumo (kg/dia) sobe porque o animal fica mais pesado.
-Quando a receita gerada/dia < diária → caixa negativo → o lucro acumulado
-começa a cair. O motor encontra o dia de Lucro Máximo.
-
-Arrobas em CARCAÇA (15 kg/@). Rendimento de carcaça (RC) converte
-peso vivo → carcaça e pode ser informado ou calculado.
+Arrobas em CARCAÇA (15 kg/@). Rendimento do ganho > rendimento de entrada
+(a engorda deposita carcaça com rendimento maior).
 """
 
 from fastapi import APIRouter
@@ -31,12 +38,17 @@ class EntradaConfinamento(BaseModel):
     rendimento_ganho: float = Field(60.0, gt=0, description="Rendimento de carcaça do GANHO (%) — a engorda rende mais")
     preco_compra_arroba: float = Field(300, gt=0, description="R$/@ carcaça paga na reposição")
     preco_venda_arroba: float = Field(349.7, gt=0, description="R$/@ carcaça na venda (CEPEA boi gordo)")
-    # Custo da dieta derivado do MILHO (dieta real ~50% milho na MS)
+    # Custo da dieta derivado do MILHO (terminação real ~56% milho na MS → R$1,08/kgMS)
     preco_saca_milho: float = Field(65.0, gt=0, description="Preço da saca de milho (60 kg)")
-    pct_milho_dieta: float = Field(0.50, ge=0, le=1, description="Fração da MS da dieta que é milho")
-    custo_ms_outros: float = Field(0.95, ge=0, description="Custo R$/kg MS dos demais ingredientes")
-    consumo_pct_pv: float = Field(2.2, gt=0, description="Consumo de MS (% do peso vivo)")
-    diaria_operacional: float = Field(1.60, ge=0, description="Diária operacional (R$/cab/dia)")
+    pct_milho_dieta: float = Field(0.56, ge=0, le=1, description="Fração da MS da dieta que é milho")
+    custo_ms_outros: float = Field(0.86, ge=0, description="Custo R$/kg MS dos demais ingredientes")
+    # Consumo de MS por FASE (% do peso vivo) — calibrado em dados reais
+    consumo_adaptacao_pct: float = Field(2.0, gt=0, description="Consumo MS na adaptação (%PV)")
+    consumo_crescimento_pct: float = Field(2.5, gt=0, description="Consumo MS no crescimento (%PV) — pico")
+    consumo_terminacao_pct: float = Field(2.2, gt=0, description="Consumo MS na terminação (%PV)")
+    dias_adaptacao: int = Field(18, ge=0, le=60, description="Duração da adaptação (dias)")
+    dias_crescimento: int = Field(35, ge=0, le=200, description="Duração do crescimento (dias)")
+    diaria_operacional: float = Field(1.60, ge=0, description="Diária operacional (R$/cab/dia) — MO, sanidade, energia")
     dias_max: int = Field(180, gt=0, le=400, description="Horizonte de simulação (dias)")
 
 
@@ -45,6 +57,24 @@ def _custo_kg_ms(e: "EntradaConfinamento") -> float:
     Milho moído ~87% MS, saca de 60 kg → R$/kg MS = preço_saca / 60 / 0,87."""
     milho_kg_ms = e.preco_saca_milho / 60.0 / 0.87
     return e.pct_milho_dieta * milho_kg_ms + (1 - e.pct_milho_dieta) * e.custo_ms_outros
+
+
+def _consumo_pct(e: "EntradaConfinamento", dia: int) -> float:
+    """Consumo de MS (%PV) conforme a FASE do confinamento.
+    Adaptação (restrita) → Crescimento (pico) → Terminação (cai)."""
+    if dia <= e.dias_adaptacao:
+        return e.consumo_adaptacao_pct
+    if dia <= e.dias_adaptacao + e.dias_crescimento:
+        return e.consumo_crescimento_pct
+    return e.consumo_terminacao_pct
+
+
+def _fase(e: "EntradaConfinamento", dia: int) -> str:
+    if dia <= e.dias_adaptacao:
+        return "adaptacao"
+    if dia <= e.dias_adaptacao + e.dias_crescimento:
+        return "crescimento"
+    return "terminacao"
 
 
 def _simular(e: EntradaConfinamento) -> dict:
@@ -59,15 +89,21 @@ def _simular(e: EntradaConfinamento) -> dict:
     curva = []
     peso_vivo = e.peso_entrada_kg
     custo_acum = custo_animal
+    cms_acum = 0.0
+    custo_alim_acum = 0.0
     melhor = {"dia": 0, "lucro": -custo_animal}
     breakeven = None
 
     for dia in range(1, e.dias_max + 1):
         gmd = max(e.gmd_inicial - e.decaimento_gmd * dia, 0.0)
         peso_vivo += gmd
-        cms_kg = peso_vivo * (e.consumo_pct_pv / 100.0)
-        diaria = cms_kg * custo_kg_ms + e.diaria_operacional
+        pct = _consumo_pct(e, dia)
+        cms_kg = peso_vivo * (pct / 100.0)
+        custo_alim = cms_kg * custo_kg_ms
+        diaria = custo_alim + e.diaria_operacional
         custo_acum += diaria
+        cms_acum += cms_kg
+        custo_alim_acum += custo_alim
 
         # carcaça = carcaça de entrada + ganho de peso × rendimento do ganho
         ganho_pv = peso_vivo - e.peso_entrada_kg
@@ -79,12 +115,16 @@ def _simular(e: EntradaConfinamento) -> dict:
         if lucro >= 0 and breakeven is None:
             breakeven = dia
         if lucro > melhor["lucro"]:
-            melhor = {"dia": dia, "lucro": lucro}
+            melhor = {"dia": dia, "lucro": lucro, "cms_acum": cms_acum,
+                      "custo_alim_acum": custo_alim_acum}
 
         curva.append({
             "dia": dia,
+            "fase": _fase(e, dia),
             "gmd": round(gmd, 3),
             "peso_vivo": round(peso_vivo, 1),
+            "consumo_pct_pv": pct,
+            "cms_kg": round(cms_kg, 2),
             "rc_atual": round(carcaca / peso_vivo * 100, 1),
             "arroba_carcaca": round(arroba_carc, 2),
             "receita": round(receita, 2),
@@ -95,9 +135,12 @@ def _simular(e: EntradaConfinamento) -> dict:
 
     return {"curva": curva, "dias_otimos": melhor["dia"],
             "lucro_maximo": round(melhor["lucro"], 2),
+            "cms_acum": melhor.get("cms_acum", 0.0),
+            "custo_alim_acum": melhor.get("custo_alim_acum", 0.0),
             "breakeven_dias": breakeven,
             "custo_animal": round(custo_animal, 2),
             "arroba_entrada": round(arroba_entrada, 2),
+            "custo_kg_ms": round(custo_kg_ms, 4),
             "agio_cab": round(agio_cab, 2)}
 
 
@@ -116,6 +159,12 @@ def calcular(entrada: EntradaConfinamento):
         carcaca_prod = arrobas_prod * ARROBA_CARCACA_KG
         ganho_carcaca_medio = carcaca_prod / dias if dias else 0
         custo_op = otimo["custo_acumulado"] - sim["custo_animal"]
+        cms_acum = sim["cms_acum"]
+        # Conversão alimentar (kg MS / kg ganho de PV) e em carcaça (kg MS / @ produzida)
+        conv_alimentar = cms_acum / ganho_pv if ganho_pv > 0 else 0
+        conv_carcaca = cms_acum / arrobas_prod if arrobas_prod > 0 else 0
+        custo_alim_arroba = sim["custo_alim_acum"] / arrobas_prod if arrobas_prod > 0 else 0
+        cms_media = cms_acum / dias if dias else 0
         resumo = {
             "dias_otimos": dias,
             "breakeven_dias": sim["breakeven_dias"],
@@ -132,6 +181,12 @@ def calcular(entrada: EntradaConfinamento):
             "custo_animal": sim["custo_animal"],
             "custo_operacional": round(custo_op, 2),
             "custo_arroba_produzida": round(custo_op / arrobas_prod, 2) if arrobas_prod > 0 else 0,
+            "custo_kg_ms": sim["custo_kg_ms"],
+            "cms_media_dia": round(cms_media, 2),
+            "consumo_total_ms": round(cms_acum, 1),
+            "conversao_alimentar": round(conv_alimentar, 2),
+            "conversao_carcaca": round(conv_carcaca, 1),
+            "custo_alimentar_arroba": round(custo_alim_arroba, 2),
             "receita": otimo["receita"],
             "agio_cab": sim["agio_cab"],
             "viavel": sim["lucro_maximo"] > 0,

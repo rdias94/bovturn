@@ -126,7 +126,11 @@ export interface EntradaConfinamento {
   preco_saca_milho: number;
   pct_milho_dieta: number;
   custo_ms_outros: number;
-  consumo_pct_pv: number;
+  consumo_adaptacao_pct: number;
+  consumo_crescimento_pct: number;
+  consumo_terminacao_pct: number;
+  dias_adaptacao: number;
+  dias_crescimento: number;
   diaria_operacional: number;
   dias_max: number;
 }
@@ -147,6 +151,12 @@ export interface ResumoConfinamento {
   custo_animal: number;
   custo_operacional: number;
   custo_arroba_produzida: number;
+  custo_kg_ms: number;
+  cms_media_dia: number;
+  consumo_total_ms: number;
+  conversao_alimentar: number;
+  conversao_carcaca: number;
+  custo_alimentar_arroba: number;
   receita: number;
   agio_cab: number;
   viavel: boolean;
@@ -155,8 +165,11 @@ export interface ResumoConfinamento {
 
 export interface PontoCurva {
   dia: number;
+  fase: string;
   gmd: number;
   peso_vivo: number;
+  consumo_pct_pv: number;
+  cms_kg: number;
   rc_atual: number;
   arroba_carcaca: number;
   receita: number;
@@ -437,6 +450,107 @@ export interface RecriaResultado {
 
 export async function calcularRecria(e: Partial<RecriaEntrada>): Promise<RecriaResultado> {
   const r = await fetch(`${API_URL}/api/recria/calcular`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(e),
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.detail || `Erro ${r.status}`);
+  return data;
+}
+
+// ---------- Ciclo completo (Recria + Engorda juntos) ----------
+export interface CicloEntrada {
+  peso_entrada_kg: number;
+  preco_kg_bezerro: number;
+  rc_entrada: number;
+  peso_transicao_kg: number;
+  gmd_aguas: number;
+  gmd_seca: number;
+  pct_periodo_aguas: number;
+  custo_pasto_recria_cab_mes: number;
+  custo_suplemento_recria_cab_mes: number;
+  custo_mdo_cab_mes: number;
+  custo_sanidade_cab_ano: number;
+  modo_engorda: "pasto" | "confinamento";
+  peso_final_kg: number;
+  rc_final: number;
+  arroba_abate_alvo: number;
+  gmd_engorda_pasto: number;
+  custo_engorda_pasto_cab_mes: number;
+  gmd_confinamento: number;
+  consumo_pct_pv_conf: number;
+  preco_saca_milho: number;
+  pct_milho_dieta: number;
+  custo_ms_outros: number;
+  diaria_operacional_conf: number;
+  preco_venda_arroba: number;
+}
+
+export interface CicloResultado {
+  modo_engorda: string;
+  peso_entrada_kg: number;
+  peso_transicao_kg: number;
+  peso_final_kg: number;
+  ganho_total_kg: number;
+  dias_recria: number;
+  dias_engorda: number;
+  dias_total: number;
+  meses_recria: number;
+  meses_engorda: number;
+  meses_total: number;
+  gmd_recria: number;
+  gmd_engorda: number;
+  gmd_global: number;
+  arroba_entrada: number;
+  arroba_final: number;
+  arrobas_produzidas: number;
+  rc_entrada: number;
+  rc_final: number;
+  custo_animal: number;
+  custo_recria: number;
+  custo_engorda: number;
+  custo_operacional: number;
+  custo_total: number;
+  receita: number;
+  lucro_cab: number;
+  lucro_arroba: number;
+  custo_arroba_produzida: number;
+  custo_total_arroba: number;
+  tir_am_pct: number;
+  desembolso: { bezerro: number; recria: number; engorda: number };
+  desembolso_pct: { bezerro: number; recria: number; engorda: number };
+  detalhe_engorda: { cms_dia?: number; custo_kg_ms?: number; custo_alimentar?: number };
+  viavel: boolean;
+  semaforo: string;
+}
+
+export interface Intensidade {
+  nome: string;
+  modo_engorda: string;
+  meses_total: number;
+  gmd_global: number;
+  custo_arroba_produzida: number;
+  lucro_cab: number;
+  lucro_arroba: number;
+  tir_am_pct: number;
+  arrobas_produzidas: number;
+  melhor: boolean;
+}
+
+export async function calcularCiclo(e: Partial<CicloEntrada>): Promise<CicloResultado> {
+  const r = await fetch(`${API_URL}/api/ciclo/calcular`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(e),
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.detail || `Erro ${r.status}`);
+  return data;
+}
+
+export async function compararCiclo(e: Partial<CicloEntrada>): Promise<{ intensidades: Intensidade[] }> {
+  const r = await fetch(`${API_URL}/api/ciclo/comparar`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(e),

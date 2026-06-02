@@ -26,15 +26,21 @@ const PADRAO: EntradaConfinamento = {
   preco_compra_arroba: 300,
   preco_venda_arroba: 349.7,
   preco_saca_milho: 65,
-  pct_milho_dieta: 0.5,
-  custo_ms_outros: 0.95,
-  consumo_pct_pv: 2.2,
+  pct_milho_dieta: 0.56,
+  custo_ms_outros: 0.86,
+  consumo_adaptacao_pct: 2.0,
+  consumo_crescimento_pct: 2.5,
+  consumo_terminacao_pct: 2.2,
+  dias_adaptacao: 18,
+  dias_crescimento: 35,
   diaria_operacional: 1.6,
   dias_max: 180,
 };
 
 const brl = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+const brl2 = (v: number) =>
+  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function ConfinamentoView() {
   const [form, setForm] = useState<EntradaConfinamento>(PADRAO);
@@ -75,8 +81,15 @@ export default function ConfinamentoView() {
     ["preco_saca_milho", "Milho (R$/saca 60kg)", "1"],
     ["pct_milho_dieta", "% milho na dieta (0-1)", "0.05"],
     ["custo_ms_outros", "Custo MS outros (R$/kg)", "0.01"],
-    ["consumo_pct_pv", "Consumo MS (% PV)", "0.1"],
     ["diaria_operacional", "Diária operacional (R$)", "0.1"],
+  ];
+
+  const fases: [keyof EntradaConfinamento, string, string][] = [
+    ["consumo_adaptacao_pct", "Consumo adaptação (%PV)", "0.1"],
+    ["consumo_crescimento_pct", "Consumo crescimento (%PV)", "0.1"],
+    ["consumo_terminacao_pct", "Consumo terminação (%PV)", "0.1"],
+    ["dias_adaptacao", "Dias de adaptação", "1"],
+    ["dias_crescimento", "Dias de crescimento", "1"],
   ];
 
   const inp =
@@ -92,6 +105,18 @@ export default function ConfinamentoView() {
         </p>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
           {campos.map(([k, label, step]) => (
+            <label key={k} className="block">
+              <span className="text-[11px] text-neutral-500">{label}</span>
+              <input type="number" step={step} className={inp} value={form[k]}
+                onChange={(e) => set(k, e.target.value)} required />
+            </label>
+          ))}
+        </div>
+        <p className="mb-1 mt-3 text-[11px] font-medium text-neutral-500">
+          Consumo de MS por fase (curva real: adaptação restrita → crescimento pico → terminação cai)
+        </p>
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+          {fases.map(([k, label, step]) => (
             <label key={k} className="block">
               <span className="text-[11px] text-neutral-500">{label}</span>
               <input type="number" step={step} className={inp} value={form[k]}
@@ -141,6 +166,21 @@ export default function ConfinamentoView() {
               <Item r="@ entrada → saída" v={`${r.arroba_entrada} → ${r.arroba_saida}`} />
               <Item r="Custo @ produzida" v={brl(r.custo_arroba_produzida)} />
               <Item r="Ágio na reposição" v={`${brl(r.agio_cab)}/cab`} destaque={r.agio_cab > 0 ? "ruim" : "bom"} />
+            </dl>
+          </div>
+
+          <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+            <h3 className="mb-1 text-sm font-semibold text-neutral-900">Desempenho nutricional</h3>
+            <p className="mb-3 text-xs text-neutral-500">
+              Eficiência da dieta no ponto ótimo — quanto de MS para cada kg/@ produzida.
+            </p>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-3 lg:grid-cols-6">
+              <Item r="Conversão alimentar" v={`${r.conversao_alimentar} kgMS/kg`} destaque={r.conversao_alimentar <= 7 ? "bom" : r.conversao_alimentar <= 8.5 ? undefined : "ruim"} />
+              <Item r="Conversão em carcaça" v={`${r.conversao_carcaca} kgMS/@`} />
+              <Item r="Custo alimentar" v={`${brl(r.custo_alimentar_arroba)}/@`} />
+              <Item r="CMS média/dia" v={`${r.cms_media_dia} kg`} />
+              <Item r="Consumo total MS" v={`${r.consumo_total_ms} kg`} />
+              <Item r="Custo kg MS (dieta)" v={brl2(r.custo_kg_ms)} />
             </dl>
           </div>
         </>

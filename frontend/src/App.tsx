@@ -11,6 +11,7 @@ import AnaliseView from "./AnaliseView";
 import CriaView from "./CriaView";
 import EngordaView from "./EngordaView";
 import RecriaView from "./RecriaView";
+import CicloView from "./CicloView";
 
 interface Msg {
   autor: "voce" | "agente";
@@ -47,6 +48,7 @@ export default function App() {
     | "cria"
     | "recria"
     | "engorda"
+    | "ciclo"
     | "clientes"
     | "confinamento"
     | "analise"
@@ -130,6 +132,7 @@ export default function App() {
               "cria",
               "recria",
               "engorda",
+              "ciclo",
               "confinamento",
               "analise",
               "clientes",
@@ -144,19 +147,16 @@ export default function App() {
                   : "border-transparent text-neutral-500 hover:text-neutral-800"
               }`}
             >
-              {t === "agente"
-                ? "Agente"
-                : t === "cria"
-                  ? "Cria"
-                  : t === "recria"
-                    ? "Recria"
-                    : t === "engorda"
-                      ? "Engorda"
-                      : t === "confinamento"
-                        ? "Confinamento"
-                        : t === "analise"
-                          ? "Análise"
-                          : "Clientes"}
+              {{
+                agente: "Agente",
+                cria: "Cria",
+                recria: "Recria",
+                engorda: "Engorda",
+                ciclo: "Recria+Engorda",
+                confinamento: "Confinamento",
+                analise: "Análise",
+                clientes: "Clientes",
+              }[t]}
             </button>
           ))}
         </nav>
@@ -168,6 +168,7 @@ export default function App() {
       {aba === "cria" && <CriaView />}
       {aba === "engorda" && <EngordaView />}
       {aba === "recria" && <RecriaView />}
+      {aba === "ciclo" && <CicloView />}
 
       {aba === "agente" && (
       <main className="mx-auto grid max-w-5xl gap-4 px-4 py-4 lg:grid-cols-[1fr_minmax(0,420px)]">
